@@ -13,15 +13,15 @@ namespace Puch.FirebirdHelper
     {
         static readonly PropertyInfo[] _fields = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(p => p.GetCustomAttributes(typeof(ColumnAttribute), true).Any()).ToArray();
 
-        protected IList<T> Select(string sqlQuery, params object[] parameters) { return Select(sqlQuery, null, parameters); }
-        protected IList<T> Select(string sqlQuery, FbTransaction transaction, params object[] parameters)
+        protected List<T> Select(string sqlQuery, params object[] parameters) { return Select(sqlQuery, null, parameters); }
+        protected List<T> Select(string sqlQuery, FbTransaction transaction, params object[] parameters)
         {
             try
             {
                 var rows = new List<T>();
                 FbCommand command = transaction == null ? new FbCommand(sqlQuery, Connector.Connection) : new FbCommand(sqlQuery, Connector.Connection, transaction);
                 int parameterNumber = 0;
-                foreach (string parameter in sqlQuery.Split(new char[] { ' ', '=', ',', '(', ')' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
+                foreach (string parameter in sqlQuery.Split(new char[] { ' ', '=', ',', '(', ')', '%' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
                 {
                     object parameterValue = parameters[parameterNumber++];
                     if (parameterValue.GetType().IsEnum)
@@ -104,6 +104,7 @@ namespace Puch.FirebirdHelper
 
         private void _refreshFields(T row, IEnumerable<PropertyInfo> fields, FbTransaction transaction)
         {
+            ColumnAttribute idAttribute = (ColumnAttribute)row.Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
             if (fields.Count() > 0)
             {
                 row.IsDbReading = true;
@@ -122,7 +123,9 @@ namespace Puch.FirebirdHelper
                     }
                     sql.Append(" from ")
                         .Append(((TableNameAttribute)this.GetType().GetCustomAttributes(typeof(TableNameAttribute), true).First()).Name)
-                        .Append(" where ID=")
+                        .Append(" where ")
+                        .Append(idAttribute.Name)
+                        .Append("ID=")
                         .Append(row.Id);
                     FbCommand command = transaction == null ? new FbCommand(sql.ToString(), Connector.Connection) : new FbCommand(sql.ToString(), Connector.Connection, transaction);
                     using (FbDataReader reader = command.ExecuteReader(System.Data.CommandBehavior.SingleRow))

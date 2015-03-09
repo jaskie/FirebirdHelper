@@ -12,8 +12,9 @@ namespace Puch.FirebirdHelper
     public abstract class FirebirdRow : INotifyPropertyChanged
     {
         protected const long NoId = -1;
+        
         [Column]
-        public long Id { get; set; }
+        public virtual long Id { get; set; }
         public FirebirdRow()
         {
             Id = NoId;
@@ -52,6 +53,7 @@ namespace Puch.FirebirdHelper
         {
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
             GeneratorNameAttribute generatorNameAttribute = (GeneratorNameAttribute)Table.GetType().GetCustomAttributes(typeof(GeneratorNameAttribute), false).FirstOrDefault();
+            ColumnAttribute idAttribute = (ColumnAttribute)Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
             lock (PreviousFieldValues)
             {
                 if (PreviousFieldValues.Count() > 0)
@@ -67,7 +69,7 @@ namespace Puch.FirebirdHelper
                             if (generatorNameAttribute != null && !string.IsNullOrWhiteSpace(generatorNameAttribute.Name))
                             {
                                 var vb = new StringBuilder(" (@ID, ");
-                                cb.Append("insert into \"").Append(tableNameAttribute.Name).Append("\" (ID, ");
+                                cb.Append("insert into \"").Append(tableNameAttribute.Name).Append("\" (").Append(idAttribute.Name).Append(", ");
                                 id = Connector.GenNextGenValue(generatorNameAttribute.Name);
                                 foreach (PropertyInfo field in PreviousFieldValues.Keys)
                                 {
@@ -105,7 +107,7 @@ namespace Puch.FirebirdHelper
                                 else
                                     cb.Append(" ");
                             }
-                            cb.Append("where ID=@ID");
+                            cb.Append("where ").Append(idAttribute.Name).Append("=@ID");
                         }
                         var command = new FbCommand(cb.ToString(), Connector.Connection);
                         command.Transaction = transaction;
@@ -149,14 +151,16 @@ namespace Puch.FirebirdHelper
             if (IsNew)
                 return;
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
-            if (tableNameAttribute != null && !string.IsNullOrWhiteSpace(tableNameAttribute.Name))
+            ColumnAttribute idAttribute = (ColumnAttribute)Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
+            if (tableNameAttribute != null && !string.IsNullOrWhiteSpace(tableNameAttribute.Name) 
+                && !string.IsNullOrWhiteSpace(idAttribute.Name))
             {
-                var command = new FbCommand(string.Format("delete from \"{0}\" where ID={1}", tableNameAttribute.Name, Id), Connector.Connection);
+                var command = new FbCommand(string.Format("delete from \"{0}\" where \"{1}\"={2}", tableNameAttribute.Name, idAttribute.Name, Id), Connector.Connection);
                 command.Transaction = transaction;
                 command.ExecuteNonQuery();
             }
             else
-                throw new ApplicationException("No table name provioded to delete record");
+                throw new ApplicationException("No table name provided to delete record");
 
         }
 

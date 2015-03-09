@@ -53,6 +53,20 @@ namespace Puch.FirebirdHelper
                 c.ExecuteNonQuery();
         }
 
+        public static object ExecuteScalar(string statement)
+        {
+            return ExecuteScalar(statement, null);
+        }
+
+        public static object ExecuteScalar(string statement, FbTransaction transaction)
+        {
+            FbCommand c;
+            if (transaction == null)
+                c = new FbCommand(statement, Connection, transaction);
+            else
+                c = new FbCommand(statement, Connection);
+            return c.ExecuteScalar();
+        }
 
         internal static long GenNextGenValue(string generatorName)
         {
