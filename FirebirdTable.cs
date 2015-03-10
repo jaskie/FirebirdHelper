@@ -104,7 +104,7 @@ namespace Puch.FirebirdHelper
 
         private void _refreshFields(T row, IEnumerable<PropertyInfo> fields, FbTransaction transaction)
         {
-            ColumnAttribute idAttribute = (ColumnAttribute)row.Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
+            ColumnAttribute idAttribute = (ColumnAttribute)row.GetType().GetProperty("Id").GetCustomAttributes(typeof(ColumnAttribute), false).First();
             if (fields.Count() > 0)
             {
                 row.IsDbReading = true;
@@ -125,7 +125,7 @@ namespace Puch.FirebirdHelper
                         .Append(((TableNameAttribute)this.GetType().GetCustomAttributes(typeof(TableNameAttribute), true).First()).Name)
                         .Append(" where ")
                         .Append(idAttribute.Name)
-                        .Append("ID=")
+                        .Append("=")
                         .Append(row.Id);
                     FbCommand command = transaction == null ? new FbCommand(sql.ToString(), Connector.Connection) : new FbCommand(sql.ToString(), Connector.Connection, transaction);
                     using (FbDataReader reader = command.ExecuteReader(System.Data.CommandBehavior.SingleRow))

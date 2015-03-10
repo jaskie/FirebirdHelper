@@ -53,7 +53,7 @@ namespace Puch.FirebirdHelper
         {
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
             GeneratorNameAttribute generatorNameAttribute = (GeneratorNameAttribute)Table.GetType().GetCustomAttributes(typeof(GeneratorNameAttribute), false).FirstOrDefault();
-            ColumnAttribute idAttribute = (ColumnAttribute)Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
+            ColumnAttribute idAttribute = (ColumnAttribute)GetType().GetProperty("Id").GetCustomAttributes(typeof(ColumnAttribute), false).First();
             lock (PreviousFieldValues)
             {
                 if (PreviousFieldValues.Count() > 0)
@@ -151,7 +151,7 @@ namespace Puch.FirebirdHelper
             if (IsNew)
                 return;
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
-            ColumnAttribute idAttribute = (ColumnAttribute)Id.GetType().GetCustomAttributes(typeof(ColumnAttribute), false).First();
+            ColumnAttribute idAttribute = (ColumnAttribute)GetType().GetProperty("Id").GetCustomAttributes(typeof(ColumnAttribute), false).First();
             if (tableNameAttribute != null && !string.IsNullOrWhiteSpace(tableNameAttribute.Name) 
                 && !string.IsNullOrWhiteSpace(idAttribute.Name))
             {
