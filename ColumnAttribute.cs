@@ -17,7 +17,7 @@ namespace Puch.FirebirdHelper
             this.Name = name.ToUpperInvariant();
             this.Length = length;
         }
-        public string Name { get; private set; }
-        public int Length { get; private set; }
+        public string Name { get; set; }
+        public int Length { get; set; }
     }
 }

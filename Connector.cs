@@ -53,18 +53,14 @@ namespace Puch.FirebirdHelper
                 c.ExecuteNonQuery();
         }
 
-        public static object ExecuteScalar(string statement)
+        public static object ExecuteScalar(string statement, params object[] parameters)
         {
-            return ExecuteScalar(statement, null);
+            return ExecuteScalar(statement, null, parameters);
         }
 
-        public static object ExecuteScalar(string statement, FbTransaction transaction)
+        public static object ExecuteScalar(string statement, FbTransaction transaction, params object[] parameters)
         {
-            FbCommand c;
-            if (transaction == null)
-                c = new FbCommand(statement, Connection, transaction);
-            else
-                c = new FbCommand(statement, Connection);
+            FbCommand c = GetCommand(statement, transaction, parameters);
             return c.ExecuteScalar();
         }
 
@@ -72,6 +68,20 @@ namespace Puch.FirebirdHelper
         {
             FbCommand c = new FbCommand(string.Format("select gen_id({0}, 1) from rdb$database;", generatorName), Connection);
             return (long)c.ExecuteScalar();
+        }
+
+        internal static FbCommand GetCommand(string statement, FbTransaction transaction, params object[] parameters)
+        {
+            FbCommand command = transaction == null ? new FbCommand(statement, Connection) : new FbCommand(statement, Connection, transaction);
+            int parameterNumber = 0;
+            foreach (string parameter in statement.Split(new char[] { ' ', '=', ',', '(', ')', '%', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
+            {
+                object parameterValue = parameters[parameterNumber++];
+                if (parameterValue.GetType().IsEnum)
+                    parameterValue = Convert.ChangeType(parameterValue, parameterValue.GetType().GetEnumUnderlyingType());
+                command.Parameters.Add(parameter, parameterValue);
+            }
+            return command;
         }
 
     }
