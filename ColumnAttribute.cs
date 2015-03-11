@@ -12,10 +12,12 @@ namespace Puch.FirebirdHelper
     Inherited = false)]
     public class ColumnAttribute : Attribute
     {
-        public ColumnAttribute([CallerMemberName] string name = null)
+        public ColumnAttribute([CallerMemberName] string name = null, int length = 0)
         {
             this.Name = name.ToUpperInvariant();
+            this.Length = length;
         }
         public string Name { get; private set; }
+        public int Length { get; private set; }
     }
 }

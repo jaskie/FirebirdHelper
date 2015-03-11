@@ -64,6 +64,7 @@
     <Compile Include="FirebirdTable.cs" />
     <Compile Include="GeneratorNameAttribute.cs" />
     <Compile Include="JoinFieldAttribute.cs" />
+    <Compile Include="StringExtensions.cs" />
     <Compile Include="TableNameAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

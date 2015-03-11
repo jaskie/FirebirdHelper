@@ -20,8 +20,41 @@ namespace Puch.FirebirdHelper
             Id = NoId;
         }
 
+        public FirebirdRow(object table)
+        {
+            Table = table;
+            Id = NoId;
+        }
+
         internal bool IsDbReading = false;
         internal object Table;
+
+        protected bool SetField(ref string field, string value, [CallerMemberName] string fieldName = null)
+        {
+            if (EqualityComparer<string>.Default.Equals(field, value)) return false;
+            if (!IsDbReading)
+            {
+                PropertyInfo pi = this.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                ColumnAttribute columnAttribute = (ColumnAttribute)pi.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault();
+                if (columnAttribute != null)  // database column
+                {
+                    if (!(pi.GetCustomAttributes(typeof(DatabaseAutoUpdatedAttribute), true).Any()
+                       || pi.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any())) // not database and read only
+                        lock (PreviousFieldValues)
+                            if (!PreviousFieldValues.ContainsKey(pi))
+                                PreviousFieldValues[pi] = field;
+                }
+                Modified = true;
+                if (!string.IsNullOrWhiteSpace(value) && columnAttribute != null && columnAttribute.Length > 0 && value.Length > columnAttribute.Length)
+                    field = value.Substring(0, columnAttribute.Length);
+                else
+                    field = value;
+            }
+            else
+                field = value;
+            NotifyOfPropertyChange(fieldName);
+            return true;
+        }
 
         protected bool SetField<T>(ref T field, T value, [CallerMemberName] string fieldName = null)
         {
