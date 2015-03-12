@@ -40,9 +40,9 @@ namespace Puch.FirebirdHelper
                 {
                     if (!(pi.GetCustomAttributes(typeof(DatabaseAutoUpdatedAttribute), true).Any()
                        || pi.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any())) // not database and read only
-                        lock (PreviousFieldValues)
-                            if (!PreviousFieldValues.ContainsKey(pi))
-                                PreviousFieldValues[pi] = field;
+                        lock (FieldsPreviousValue)
+                            if (!FieldsPreviousValue.ContainsKey(pi))
+                                FieldsPreviousValue[pi] = field;
                 }
                 Modified = true;
                 if (!string.IsNullOrWhiteSpace(value) && columnAttribute != null && columnAttribute.Length > 0 && value.Length > columnAttribute.Length)
@@ -66,10 +66,10 @@ namespace Puch.FirebirdHelper
                 {
                     if (!(pi.GetCustomAttributes(typeof(DatabaseAutoUpdatedAttribute), true).Any()
                        || pi.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any())) // not database and read only
-                        lock (PreviousFieldValues)
+                        lock (FieldsPreviousValue)
                         {
-                            if (!PreviousFieldValues.ContainsKey(pi))
-                                PreviousFieldValues[pi] = field;
+                            if (!FieldsPreviousValue.ContainsKey(pi))
+                                FieldsPreviousValue[pi] = field;
                         }
                 }
                 Modified = true;
@@ -79,7 +79,7 @@ namespace Puch.FirebirdHelper
             return true;
         }
 
-        protected internal Dictionary<PropertyInfo, object> PreviousFieldValues = new Dictionary<PropertyInfo, object>();
+        protected internal Dictionary<PropertyInfo, object> FieldsPreviousValue = new Dictionary<PropertyInfo, object>();
 
         public virtual void Save() { Save(null); }
         public virtual void Save(FbTransaction transaction)
@@ -87,11 +87,11 @@ namespace Puch.FirebirdHelper
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
             GeneratorNameAttribute generatorNameAttribute = (GeneratorNameAttribute)Table.GetType().GetCustomAttributes(typeof(GeneratorNameAttribute), false).FirstOrDefault();
             ColumnAttribute idAttribute = (ColumnAttribute)GetType().GetProperty("Id").GetCustomAttributes(typeof(ColumnAttribute), false).First();
-            lock (PreviousFieldValues)
+            lock (FieldsPreviousValue)
             {
-                if (PreviousFieldValues.Count() > 0)
+                if (FieldsPreviousValue.Count() > 0)
                 {
-                    PropertyInfo lastField = PreviousFieldValues.Last().Key;
+                    PropertyInfo lastField = FieldsPreviousValue.Last().Key;
                     if (tableNameAttribute != null && !string.IsNullOrWhiteSpace(tableNameAttribute.Name))
                     {
                         StringBuilder cb = new StringBuilder();
@@ -104,7 +104,7 @@ namespace Puch.FirebirdHelper
                                 var vb = new StringBuilder(" (@ID, ");
                                 cb.Append("insert into \"").Append(tableNameAttribute.Name).Append("\" (").Append(idAttribute.Name).Append(", ");
                                 id = Connector.GenNextGenValue(generatorNameAttribute.Name);
-                                foreach (PropertyInfo field in PreviousFieldValues.Keys)
+                                foreach (PropertyInfo field in FieldsPreviousValue.Keys)
                                 {
                                     ColumnAttribute an = (ColumnAttribute)(field.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
                                     string fieldName = (an == null) ? field.Name.ToUpperInvariant() : an.Name;
@@ -130,7 +130,7 @@ namespace Puch.FirebirdHelper
                         else
                         {
                             cb.Append("update \"").Append(tableNameAttribute.Name).Append("\" set ");
-                            foreach (PropertyInfo field in PreviousFieldValues.Keys)
+                            foreach (PropertyInfo field in FieldsPreviousValue.Keys)
                             {
                                 ColumnAttribute an = (ColumnAttribute)(field.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
                                 string fieldName = (an == null) ? field.Name.ToUpperInvariant() : an.Name;
@@ -146,14 +146,14 @@ namespace Puch.FirebirdHelper
                         command.Transaction = transaction;
                         command.Parameters.Add("@ID", id);
                         PropertyInfo[] fields = this.GetType().GetProperties();
-                        foreach (var field in PreviousFieldValues)
+                        foreach (var field in FieldsPreviousValue)
                         {
                             ColumnAttribute an = (ColumnAttribute)(field.Key.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
                             string fieldName = (an == null) ? field.Key.Name.ToUpperInvariant() : an.Name;
                             command.Parameters.Add("@" + fieldName, field.Key.GetValue(this, null));
                         }
                         command.ExecuteNonQuery();
-                        PreviousFieldValues.Clear();
+                        FieldsPreviousValue.Clear();
                         RefreshAutoUpdatedFields(transaction, inserting);
                     }
                     else
@@ -165,11 +165,11 @@ namespace Puch.FirebirdHelper
 
         public virtual void Cancel()
         {
-            lock (PreviousFieldValues)
+            lock (FieldsPreviousValue)
             {
-                foreach (var field in PreviousFieldValues)
+                foreach (var field in FieldsPreviousValue)
                     field.Key.SetValue(this, field.Value, null);
-                PreviousFieldValues.Clear();
+                FieldsPreviousValue.Clear();
             }
             Modified = false;
         }

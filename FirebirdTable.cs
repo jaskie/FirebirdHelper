@@ -64,11 +64,11 @@ namespace Puch.FirebirdHelper
                 {
                     object dbValue = reader.GetValue(reader.GetOrdinal(fieldName));
                     object instanceValue = field.GetValue(row, null);
-                    lock (row.PreviousFieldValues)
+                    lock (row.FieldsPreviousValue)
                     {
                         if (!dbValue.Equals(instanceValue))
-                            if (row.PreviousFieldValues.ContainsKey(field))  // if user modified this field
-                                row.PreviousFieldValues[field] = (dbValue == DBNull.Value) ? null : dbValue;
+                            if (row.FieldsPreviousValue.ContainsKey(field))  // if user modified this field
+                                row.FieldsPreviousValue[field] = (dbValue == DBNull.Value) ? null : dbValue;
                             else
                                 field.SetValue(row, (dbValue == DBNull.Value) ? null : dbValue, null);
                     }
