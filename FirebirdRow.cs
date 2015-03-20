@@ -81,12 +81,13 @@ namespace Puch.FirebirdHelper
 
         protected internal Dictionary<PropertyInfo, object> FieldsPreviousValue = new Dictionary<PropertyInfo, object>();
 
-        public virtual void Save() { Save(null); }
-        public virtual void Save(FbTransaction transaction)
+        public virtual bool Save() { return Save(null); }
+        public virtual bool Save(FbTransaction transaction)
         {
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
             GeneratorNameAttribute generatorNameAttribute = (GeneratorNameAttribute)Table.GetType().GetCustomAttributes(typeof(GeneratorNameAttribute), false).FirstOrDefault();
             ColumnAttribute idAttribute = (ColumnAttribute)GetType().GetProperty("Id").GetCustomAttributes(typeof(ColumnAttribute), false).First();
+            bool result = false;
             lock (FieldsPreviousValue)
             {
                 if (FieldsPreviousValue.Count() > 0)
@@ -155,12 +156,14 @@ namespace Puch.FirebirdHelper
                         command.ExecuteNonQuery();
                         FieldsPreviousValue.Clear();
                         RefreshAutoUpdatedFields(transaction, inserting);
+                        result = true;
                     }
                     else
                         throw new ApplicationException("No table name provided");
                 }
                 Modified = false;
             }
+            return result;
         }
 
         public virtual void Cancel()
