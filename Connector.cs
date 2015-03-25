@@ -64,9 +64,9 @@ namespace Puch.FirebirdHelper
             return c.ExecuteScalar();
         }
 
-        internal static long GenNextGenValue(string generatorName)
+        internal static long GenNextGenValue(string generatorName, FbTransaction transaction)
         {
-            FbCommand c = new FbCommand(string.Format("select gen_id({0}, 1) from rdb$database;", generatorName), Connection);
+            FbCommand c = new FbCommand(string.Format("select gen_id({0}, 1) from rdb$database;", generatorName), Connection, transaction);
             return (long)c.ExecuteScalar();
         }
 

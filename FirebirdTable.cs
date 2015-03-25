@@ -54,8 +54,14 @@ namespace Puch.FirebirdHelper
             }
         }
 
-        protected void _readFields(FbDataReader reader, IEnumerable<PropertyInfo> fields, T row, IEnumerable<string> fieldNames)
+        protected void _readFields(FbDataReader reader, IEnumerable<PropertyInfo> fields, T row, string[] fieldNames = null)
         {
+            if (fieldNames == null)
+            {
+                fieldNames = new string[reader.FieldCount];
+                for (int i = 0; i < reader.FieldCount; i++)
+                    fieldNames[i] = reader.GetName(i);
+            }
             foreach (PropertyInfo field in fields)
             {
                 var cna = field.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault();
@@ -123,7 +129,7 @@ namespace Puch.FirebirdHelper
                     using (FbDataReader reader = command.ExecuteReader(System.Data.CommandBehavior.SingleRow))
                     {
                         if (reader.Read())
-                            _readFields(reader, fields, row, fieldNames);
+                            _readFields(reader, fields, row);
                     }
                 }
                 finally
@@ -135,7 +141,7 @@ namespace Puch.FirebirdHelper
 
         protected void RefreshRow(T row, FbTransaction transaction)
         {
-            _refreshFields(row, _fields, transaction);
+            _refreshFields(row, _fields.Where(f => !f.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any()), transaction);
         }
     }
 }

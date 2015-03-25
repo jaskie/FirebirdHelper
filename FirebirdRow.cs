@@ -27,7 +27,7 @@ namespace Puch.FirebirdHelper
         }
 
         internal bool IsDbReading = false;
-        internal object Table;
+        protected internal object Table;
 
         protected bool SetField(ref string field, string value, [CallerMemberName] string fieldName = null)
         {
@@ -104,7 +104,7 @@ namespace Puch.FirebirdHelper
                             {
                                 var vb = new StringBuilder(" (@ID, ");
                                 cb.Append("insert into \"").Append(tableNameAttribute.Name).Append("\" (").Append(idAttribute.Name).Append(", ");
-                                id = Connector.GenNextGenValue(generatorNameAttribute.Name);
+                                id = Connector.GenNextGenValue(generatorNameAttribute.Name, transaction);
                                 foreach (PropertyInfo field in FieldsPreviousValue.Keys)
                                 {
                                     ColumnAttribute an = (ColumnAttribute)(field.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
@@ -206,6 +206,12 @@ namespace Puch.FirebirdHelper
         {
             var method = Table.GetType().BaseType.GetMethod("_refreshAutoUpdatedFields", BindingFlags.Instance | BindingFlags.NonPublic);
             method.Invoke(Table, new object[] {this, transaction, !inserting, inserting});
+        }
+
+        public void Refresh(FbTransaction transaction)
+        {
+            var method = Table.GetType().BaseType.GetMethod("RefreshRow", BindingFlags.Instance | BindingFlags.NonPublic);
+            method.Invoke(Table, new object[] { this, transaction });
         }
 
         private bool _modified = false;
