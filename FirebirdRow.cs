@@ -151,7 +151,7 @@ namespace Puch.FirebirdHelper
                         {
                             ColumnAttribute an = (ColumnAttribute)(field.Key.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
                             string fieldName = (an == null) ? field.Key.Name.ToUpperInvariant() : an.Name;
-                            command.Parameters.Add("@" + fieldName, field.Key.GetValue(this, null));
+                            command.Parameters.Add("@" + fieldName, field.Key.GetValue(this, null)??DBNull.Value);
                         }
                         command.ExecuteNonQuery();
                         FieldsPreviousValue.Clear();
