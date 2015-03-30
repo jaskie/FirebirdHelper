@@ -6,6 +6,7 @@ using FirebirdSql.Data.FirebirdClient;
 using System.Reflection;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace Puch.FirebirdHelper
 {
@@ -33,8 +34,9 @@ namespace Puch.FirebirdHelper
                 }
                 return rows;
             }
-            catch
+            catch (Exception e)
             {
+                Debug.WriteLine(e);
                 return null;
             }
         }
