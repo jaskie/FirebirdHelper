@@ -74,7 +74,7 @@ namespace Puch.FirebirdHelper
         {
             FbCommand command = transaction == null ? new FbCommand(statement, Connection) : new FbCommand(statement, Connection, transaction);
             int parameterNumber = 0;
-            foreach (string parameter in statement.Split(new char[] { ' ', '=', ',', '(', ')', '%', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
+            foreach (string parameter in statement.Split(new char[] { ' ', '=', ',', '<', '>', '(', ')', '%', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
             {
                 object parameterValue = parameters[parameterNumber++];
                 if (parameterValue.GetType().IsEnum)
