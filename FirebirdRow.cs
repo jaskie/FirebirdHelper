@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -82,7 +83,7 @@ namespace Puch.FirebirdHelper
         protected internal Dictionary<PropertyInfo, object> FieldsPreviousValue = new Dictionary<PropertyInfo, object>();
 
         public virtual bool Save() { return Save(null); }
-        public virtual bool Save(FbTransaction transaction)
+        public virtual bool Save(DbTransaction transaction)
         {
             TableNameAttribute tableNameAttribute = (TableNameAttribute)Table.GetType().GetCustomAttributes(typeof(TableNameAttribute), false).FirstOrDefault();
             GeneratorNameAttribute generatorNameAttribute = (GeneratorNameAttribute)Table.GetType().GetCustomAttributes(typeof(GeneratorNameAttribute), false).FirstOrDefault();
@@ -104,7 +105,7 @@ namespace Puch.FirebirdHelper
                             {
                                 var vb = new StringBuilder(" (@ID, ");
                                 cb.Append("insert into \"").Append(tableNameAttribute.Name).Append("\" (").Append(idAttribute.Name).Append(", ");
-                                id = Connector.GenNextGenValue(generatorNameAttribute.Name, transaction);
+                                id = Connector.GenNextGenValue(generatorNameAttribute.Name, (FbTransaction)transaction);
                                 foreach (PropertyInfo field in FieldsPreviousValue.Keys)
                                 {
                                     ColumnAttribute an = (ColumnAttribute)(field.GetCustomAttributes(typeof(ColumnAttribute), true).FirstOrDefault());
@@ -144,7 +145,7 @@ namespace Puch.FirebirdHelper
                             cb.Append("where ").Append(idAttribute.Name).Append("=@ID");
                         }
                         var command = new FbCommand(cb.ToString(), Connector.Connection);
-                        command.Transaction = transaction;
+                        command.Transaction = (FbTransaction)transaction;
                         command.Parameters.Add("@ID", id);
                         PropertyInfo[] fields = this.GetType().GetProperties();
                         foreach (var field in FieldsPreviousValue)
@@ -182,7 +183,7 @@ namespace Puch.FirebirdHelper
             Delete(null);
         }
 
-        public virtual void Delete(FbTransaction transaction)
+        public virtual void Delete(DbTransaction transaction)
         {
             if (IsNew)
                 return;
@@ -192,7 +193,7 @@ namespace Puch.FirebirdHelper
                 && !string.IsNullOrWhiteSpace(idAttribute.Name))
             {
                 var command = new FbCommand(string.Format("delete from \"{0}\" where \"{1}\"={2}", tableNameAttribute.Name, idAttribute.Name, Id), Connector.Connection);
-                command.Transaction = transaction;
+                command.Transaction = (FbTransaction)transaction;
                 command.ExecuteNonQuery();
             }
             else
@@ -202,13 +203,13 @@ namespace Puch.FirebirdHelper
 
         public bool IsNew { get { return Id == NoId; } }
 
-        protected void RefreshAutoUpdatedFields(FbTransaction transaction, bool inserting)
+        protected void RefreshAutoUpdatedFields(DbTransaction transaction, bool inserting)
         {
             var method = Table.GetType().BaseType.GetMethod("_refreshAutoUpdatedFields", BindingFlags.Instance | BindingFlags.NonPublic);
-            method.Invoke(Table, new object[] {this, transaction, !inserting, inserting});
+            method.Invoke(Table, new object[] {this, (FbTransaction)transaction, !inserting, inserting});
         }
 
-        public void Refresh(FbTransaction transaction)
+        public void Refresh(DbTransaction transaction)
         {
             var method = Table.GetType().BaseType.GetMethod("RefreshRow", BindingFlags.Instance | BindingFlags.NonPublic);
             method.Invoke(Table, new object[] { this, transaction });

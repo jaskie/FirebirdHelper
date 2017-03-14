@@ -12,7 +12,7 @@ namespace Puch.FirebirdHelper
     public class Connector
     {
         internal static FbConnection Connection = new FbConnection();
-        public static FbTransaction BeginTransaction()
+        public static DbTransaction BeginTransaction()
         {
             return Connection.BeginTransaction();
         }
@@ -58,21 +58,21 @@ namespace Puch.FirebirdHelper
             return ExecuteScalar(statement, null, parameters);
         }
 
-        public static object ExecuteScalar(string statement, FbTransaction transaction, params object[] parameters)
+        public static object ExecuteScalar(string statement, DbTransaction transaction, params object[] parameters)
         {
-            FbCommand c = GetCommand(statement, transaction, parameters);
+            FbCommand c = GetCommand(statement, (FbTransaction)transaction, parameters);
             return c.ExecuteScalar();
         }
 
-        internal static long GenNextGenValue(string generatorName, FbTransaction transaction)
+        internal static long GenNextGenValue(string generatorName, DbTransaction transaction)
         {
-            FbCommand c = new FbCommand(string.Format("select gen_id({0}, 1) from rdb$database;", generatorName), Connection, transaction);
+            FbCommand c = new FbCommand(string.Format("select gen_id({0}, 1) from rdb$database;", generatorName), Connection, (FbTransaction)transaction);
             return (long)c.ExecuteScalar();
         }
 
-        internal static FbCommand GetCommand(string statement, FbTransaction transaction, params object[] parameters)
+        internal static FbCommand GetCommand(string statement, DbTransaction transaction, params object[] parameters)
         {
-            FbCommand command = transaction == null ? new FbCommand(statement, Connection) : new FbCommand(statement, Connection, transaction);
+            FbCommand command = transaction == null ? new FbCommand(statement, Connection) : new FbCommand(statement, Connection, (FbTransaction)transaction);
             int parameterNumber = 0;
             foreach (string parameter in statement.Split(new char[] { ' ', '=', ',', '<', '>', '(', ')', '%', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Where(s => s.StartsWith("@")))
             {

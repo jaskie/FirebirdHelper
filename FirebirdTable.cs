@@ -7,6 +7,7 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Data.Common;
 
 namespace Puch.FirebirdHelper
 {
@@ -15,12 +16,12 @@ namespace Puch.FirebirdHelper
         static readonly PropertyInfo[] _fields = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(p => p.GetCustomAttributes(typeof(ColumnAttribute), true).Any()).ToArray();
 
         protected List<T> Select(string sqlQuery, params object[] parameters) { return Select(sqlQuery, null, parameters); }
-        protected List<T> Select(string sqlQuery, FbTransaction transaction, params object[] parameters)
+        protected List<T> Select(string sqlQuery, DbTransaction transaction, params object[] parameters)
         {
             try
             {
                 var rows = new List<T>();
-                FbCommand command = Connector.GetCommand(sqlQuery, transaction, parameters);
+                FbCommand command = Connector.GetCommand(sqlQuery, (FbTransaction)transaction, parameters);
                 using (FbDataReader reader = command.ExecuteReader())
                 {
                     string[] fieldNames = new string[reader.FieldCount];
@@ -141,9 +142,9 @@ namespace Puch.FirebirdHelper
             }
         }
 
-        protected void RefreshRow(T row, FbTransaction transaction)
+        protected void RefreshRow(T row, DbTransaction transaction)
         {
-            _refreshFields(row, _fields.Where(f => !f.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any()), transaction);
+            _refreshFields(row, _fields.Where(f => !f.GetCustomAttributes(typeof(JoinFieldAttribute), true).Any()), (FbTransaction)transaction);
         }
     }
 }
